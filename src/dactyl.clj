@@ -1443,115 +1443,79 @@
                                              (key-place lastcol (inc row) web-post-tr))))
             ))))
 
-(def ^:private model-right (difference
-                  (union
-                   key-holes
-                   key-holes-inner
-                   pinky-connectors
-                   extra-connectors
-                   connectors
-                   inner-connectors
-                   thumb-type
-                   thumb-connector-type
-                   (difference (union case-walls
-                                      #_screw-insert-outers)
-                               usb-holder-space
-                               #_trrs-notch
-                               #_ousb-holder-notch
-                               #_screw-insert-holes))
-                  (translate [0 0 -20] (cube 350 350 40))))
+(def case-roof-right (union
+                      key-holes
+                      key-holes-inner
+                      pinky-connectors
+                      extra-connectors
+                      connectors
+                      inner-connectors
+                      thumb-type
+                      thumb-connector-type))
 
-(spit "things/right.scad"
-      (write-scad model-right))
+(def case-walls-right (difference (union case-walls
+                                         #_screw-insert-outers)
+                                  usb-holder-space
+                                  #_trrs-notch
+                                  #_ousb-holder-notch
+                                  #_screw-insert-holes
+                                  (translate [0 0 -20] (cube 350 350 40))))
 
-(spit "things/left.scad"
-      (write-scad
-       (mirror [-1 0 0] model-right)))
+(spit "things/case-roof-right.scad" (write-scad case-roof-right))
 
-(spit "things/right-test.scad"
-      (write-scad (union model-right
-                         thumbcaps-type
-                         caps)))
+(spit "things/case-walls-right.scad" (write-scad case-walls-right))
 
-(spit "things/right-plate.scad"
-      (write-scad
-       (extrude-linear
-        {:height 2.6 :center false}
-        (project
-         (difference
-          (union
-           key-holes
-           key-holes-inner
-           pinky-connectors
-           extra-connectors
-           connectors
-           inner-connectors
-           thumb-type
-           thumb-connector-type
-           case-walls
-           thumbcaps-fill-type
-           caps-fill
-           screw-insert-outers)
-          (translate [0 0 -10] screw-insert-screw-holes))))))
+(def model-right (union case-roof-right case-walls-right))
 
-(spit "things/right-plate-laser.scad"
-      (write-scad
-       (cut
-        (translate [0 0 -0.1]
-                   (difference (union case-walls
-                                      screw-insert-outers)
-                               (translate [0 0 -10] screw-insert-screw-holes))))))
+(spit "things/right.scad" (write-scad model-right))
 
-(spit "things/test1.scad"
-      (write-scad
-       (difference (translate [0 0 -70] model-right)
-                   (translate [0 0 -40] (cube 350 350 80)))))
+(spit "things/left.scad" (write-scad (mirror [-1 0 0] model-right)))
 
 (spit "things/controller.scad"
       (let [w 25.6, h 9.0, d 9.0 ; 14 pin connector size
             b (+ 5 (/ w 2))
             top (union
-                ;; roof - led and button holes
-                (difference
-                 (union (translate [45 18 34.5] (cube 90 36 3))
-                        (for [i (range 3)]
-                          (translate [(+ 40 (* i 20)) 18 31.5] (cylinder 5 9))))
-                 (for [i (range 3)]
-                   (translate [(+ 40 (* i 20)) 18 0] (cylinder 2.5 80)))
-                 (translate [15 18 0] (cylinder 6.5 80)))
-                ;; button holder
-                (translate [15 18 30]
-                           (difference (cube 12 16 12)
-                                       (translate [0 0 3] (cube 10 14 7))
-                                       (translate [0 0 -3.25] (cube 15 12 3.5))
-                                       (cube 15 10 20)))
-                ;; back wall
-                (translate [1.5 18 18] (cube 3 36 36))
-                ;; front wall - micro usb port hole
-                (difference (translate [88.5 18 18] (cube 3 36 36))
-                            (translate [90 18 0] (cube 10 12 24)))
-                ;; side wall
-                (difference
-                 (union
-                  (translate [45 1.5 18] (cube 90 3 36))
-                  (translate [45 34.5 18] (cube 90 3 36))
-                  ;; spacers for 14 pin connectors
-                  (translate [b 4 18] (cube (- w 1) 8 36))
-                  (translate [b 32 18] (cube (- w 1) 8 36)))
-                 ;; side grills
-                 (for [i (range 10)]
-                   (translate [(+ 35 (* i 6)) 0 18] (cube 3 80 18)))
-                 ;; push fit notches for bottom plate
-                 #_(for [i (range 3)]
-                   (list
-                    (translate [(+ 40 (* i 20)) 3 1.5] (sphere 1))
-                    (translate [(+ 40 (* i 20)) 33 1.5] (sphere 1))))
-                 (translate [60 3 1.5] (rotate (/ π 2) [0 1 0] (cylinder 1 40)))
-                 (translate [60 33 1.5] (rotate (/ π 2) [0 1 0] (cylinder 1 40)))
-                 ;; cutout for bottom plate
-                 (translate [b 0 0] (cube (+ 2 w) 80 6))
-                 (translate [b 0 (+ 2 (/ h 2))] (cube (- w 1) 80 (- h 1)))
-                 (translate [b 18 (+ 2 (/ h 2))] (cube w 34 h))))
+                 ;; roof - led and button holes
+                 (difference
+                  (union (translate [45 18 34.5] (cube 90 36 3))
+                         (for [i (range 3)]
+                           (translate [(+ 40 (* i 20)) 18 31.5] (cylinder 5 9))))
+                  (for [i (range 3)]
+                    (translate [(+ 40 (* i 20)) 18 0] (cylinder 2.5 80)))
+                  (translate [15 18 0] (cylinder 6.5 80)))
+                 ;; button holder
+                 (translate [15 18 30]
+                            (difference (cube 12 16 12)
+                                        (translate [0 0 3] (cube 10 14 7))
+                                        (translate [0 0 -3.25] (cube 15 12 3.5))
+                                        (cube 15 10 20)))
+                 ;; back wall
+                 (translate [1.5 18 18] (cube 3 36 36))
+                 ;; front wall - micro usb port hole
+                 (difference (translate [88.5 18 18] (cube 3 36 36))
+                             (translate [90 18 0] (cube 10 12 24)))
+                 ;; side wall
+                 (difference
+                  (union
+                   (translate [45 1.5 18] (cube 90 3 36))
+                   (translate [45 34.5 18] (cube 90 3 36))
+                   ;; spacers for 14 pin connectors
+                   (translate [b 4 18] (cube (- w 1) 8 36))
+                   (translate [b 32 18] (cube (- w 1) 8 36)))
+                  ;; side grills
+                  (for [i (range 10)]
+                    (translate [(+ 35 (* i 6)) 0 18] (cube 3 80 18)))
+                  ;; push fit notches for bottom plate
+                  #_(for [i (range 3)]
+                      (list
+                       (translate [(+ 40 (* i 20)) 3 1.5] (sphere 1))
+                       (translate [(+ 40 (* i 20)) 33 1.5] (sphere 1))))
+                  (translate [60 3 1.5] (rotate (/ π 2) [0 1 0] (cylinder 1 40)))
+                  (translate [60 33 1.5] (rotate (/ π 2) [0 1 0] (cylinder 1 40)))
+                  ;; cutout for bottom plate
+                  (translate [b 0 0] (cube (+ 2 w) 80 6))
+                  (translate [b 0 (+ 2 (/ h 2))] (cube (- w 1) 80 (- h 1)))
+                  (translate [b 18 (+ 2 (/ h 2))] (cube w 34 h))))
             bot (difference
                  (translate [45 18 1.5] (cube 90 36 3))
                  ;; connector placer
@@ -1626,13 +1590,7 @@
              (extrude-linear {:height 1, :center false} (project plate)))
       left (mirror [1 0 0] right)]
   (spit "things/wrist-pad-right.scad" (write-scad right))
-  (spit "things/wrist-pad-left.scad" (write-scad left))
-  #_(spit "things/wrist-pad.scad" (write-scad
-                                   (union
-                                    plate
-                                    (translate [20 91 (/ h 2)] (cylinder 0.1 h))
-                                    (translate [0 13 (* h 0.4)] (cylinder 0.1 (* h 0.8)))
-                                    (translate [-20 91 (/ h 2)] (cylinder 0.1 h))))))
+  (spit "things/wrist-pad-left.scad" (write-scad left)))
 
 
 (defn -main [_] 1)  ; dummy to make it easier to batch
