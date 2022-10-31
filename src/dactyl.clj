@@ -28,7 +28,7 @@
 (def β (/ π 36))                        ; curvature of the rows
 (def centerrow (- nrows 3))             ; controls front-back tilt
 (def centercol 4)                       ; controls left-right tilt / tenting (higher number is more tenting)
-(def tenting-angle (/ π 8))            ; or, change this for more precise tenting control
+(def tenting-angle (/ π 6))            ; or, change this for more precise tenting control
 
 (def pinky-15u false)                   ; controls whether the outer column uses 1.5u keys
 (def first-15u-row 0)                   ; controls which should be the first row to have 1.5u keys on the outer column
@@ -52,13 +52,13 @@
 
 (def thumb-offsets [6 -3 7])
 
-(def keyboard-z-offset 16)               ; controls overall height; original=9 with centercol=3; use 16 for centercol=2
+(def keyboard-z-offset 26)               ; controls overall height; original=9 with centercol=3; use 16 for centercol=2
 
-(def extra-width 2.5)                   ; extra space between the base of keys; original= 2
-(def extra-height 1.0)                  ; original= 0.5
+(def extra-width 5)                   ; extra space between the base of keys; original= 2
+(def extra-height 3)                  ; original= 0.5
 
 (def wall-z-offset -8)                 ; length of the first downward-sloping part of the wall (negative)
-(def wall-xy-offset 5)                  ; offset in the x and/or y direction for the first downward-sloping part of the wall (negative)
+(def wall-xy-offset 10)                  ; offset in the x and/or y direction for the first downward-sloping part of the wall (negative)
 (def wall-thickness 2)                  ; wall thickness parameter; originally 5
 
 ;; Settings for column-style == :fixed
@@ -990,8 +990,8 @@
 (defn bottom-hull [& p]
   (hull p (bottom 0.001 p)))
 
-(def left-wall-x-offset 4)
-(def left-wall-z-offset 1)
+(def left-wall-x-offset 16)
+(def left-wall-z-offset 0)
 
 (defn left-key-position [row direction]
   (map - (key-position 0 row [(* mount-width -0.5) (* direction mount-height 0.5) 0]) [left-wall-x-offset 0 left-wall-z-offset]) )
