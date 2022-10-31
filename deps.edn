@@ -1,0 +1,1 @@
+{:deps {scad-clj/scad-clj {:mvn/version "0.5.3"}}}
