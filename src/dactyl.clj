@@ -4,6 +4,7 @@
             [scad-clj.scad :refer [write-scad]]
             [scad-clj.model :refer [*fn* pi
                                     with-fn
+                                    scale
                                     polygon
                                     cube cylinder sphere
                                     hull
@@ -28,13 +29,13 @@
 (def β (/ π 36))                        ; curvature of the rows
 (def centerrow (- nrows 3))             ; controls front-back tilt
 (def centercol 4)                       ; controls left-right tilt / tenting (higher number is more tenting)
-(def tenting-angle (/ π 6))            ; or, change this for more precise tenting control
+(def tenting-angle (/ π 4))             ; or, change this for more precise tenting control
 
 (def pinky-15u false)                   ; controls whether the outer column uses 1.5u keys
 (def first-15u-row 0)                   ; controls which should be the first row to have 1.5u keys on the outer column
 (def last-15u-row 4)                    ; controls which should be the last row to have 1.5u keys on the outer column
 
-(def extra-row true)                   ; adds an extra bottom row to the outer columns
+(def extra-row false)                   ; adds an extra bottom row to the outer columns
 (def inner-column true)                ; adds an extra inner column (two less rows than nrows)
 (def thumb-style "default")                ; toggles between "default", "mini", and "cf" thumb cluster
 
@@ -52,13 +53,14 @@
 
 (def thumb-offsets [6 -3 7])
 
-(def keyboard-z-offset 26)               ; controls overall height; original=9 with centercol=3; use 16 for centercol=2
+(def keyboard-z-offset 40)               ; controls overall height; original=9 with centercol=3; use 16 for centercol=2
 
-(def extra-width 5)                   ; extra space between the base of keys; original= 2
-(def extra-height 3)                  ; original= 0.5
+(def extra-width 3)                   ; extra space between the base of keys; original= 2
+(def extra-height 1)                  ; original= 0.5
 
-(def wall-z-offset -8)                 ; length of the first downward-sloping part of the wall (negative)
-(def wall-xy-offset 10)                  ; offset in the x and/or y direction for the first downward-sloping part of the wall (negative)
+(def wall-z-offset -10)                 ; length of the first downward-sloping part of the wall (negative)
+(def wall-x-offset 10)                  ; offset in the x and/or y direction for the first downward-sloping part of the wall (negative)
+(def wall-y-offset 8)                  ; offset in the x and/or y direction for the first downward-sloping part of the wall (negative)
 (def wall-thickness 2)                  ; wall thickness parameter; originally 5
 
 ;; Settings for column-style == :fixed
@@ -1000,8 +1002,8 @@
   (translate (left-key-position row direction) shape))
 
 (defn wall-locate1 [dx dy] [(* dx wall-thickness) (* dy wall-thickness) -1])
-(defn wall-locate2 [dx dy] [(* dx wall-xy-offset) (* dy wall-xy-offset) wall-z-offset])
-(defn wall-locate3 [dx dy] [(* dx (+ wall-xy-offset wall-thickness)) (* dy (+ wall-xy-offset wall-thickness)) wall-z-offset])
+(defn wall-locate2 [dx dy] [(* dx wall-x-offset) (* dy wall-y-offset) wall-z-offset])
+(defn wall-locate3 [dx dy] [(* dx (+ wall-x-offset wall-thickness)) (* dy (+ wall-y-offset wall-thickness)) wall-z-offset])
 
 (defn wall-brace [place1 dx1 dy1 post1 place2 dx2 dy2 post2]
   (union
@@ -1455,6 +1457,7 @@
 
 (def case-walls-right (difference (union case-walls
                                          #_screw-insert-outers)
+                                  case-roof-right
                                   usb-holder-space
                                   #_trrs-notch
                                   #_ousb-holder-notch
@@ -1538,6 +1541,8 @@
           (->> bot
                (translate [0 -40 0]))))))
 
+;;; WRIST PAD
+
 (let [ps1 [[0 85]
            [10 87]
            [18 90]
@@ -1592,5 +1597,60 @@
   (spit "things/wrist-pad-right.scad" (write-scad right))
   (spit "things/wrist-pad-left.scad" (write-scad left)))
 
+;;; Satelite board test
 
-(defn -main [_] 1)  ; dummy to make it easier to batch
+(def satelite-board
+  (union (translate [1 40 10] (cube 2 80 20))
+         (translate [21 63 -5] (cube 38 22 10))
+         (translate [-10 22 10] (cube 20 4 20))
+         (->> (cylinder 6.5 15)
+              (rotate (/ π 2) [0 1 0])
+              (translate [-7.5 37 10]))
+         (->> (cylinder 3 15)
+              (rotate (/ π 2) [0 1 0])
+              (translate [-7.5 55 10]))))
+
+(spit "things/satelite-board.scad" (write-scad satelite-board))
+
+(def primary-board
+  (union (translate [25 37.5 1] (cube 50 75 2))
+         (translate [16 73 9] (cube 16 10 14))
+         (translate [38 70 5] (cube 8 10 6))))
+
+(spit "things/primary-board.scad" (write-scad primary-board))
+
+(spit "things/test-board-in-case.scad"
+      (write-scad
+       (union case-walls-right
+              (translate [-60 4 10]
+                         (union
+                          primary-board
+                          (translate [0 -5 30] satelite-board))))))
+
+;;; key foot plate
+
+(def key-foot-plate
+  (scale [0.1 0.1 0.1]
+         (difference (union (translate [0 0 10] (cube 160 160 20))
+                            (translate [50 55 20] (cube 20 10 40))
+                            (translate [50  0 20] (cube 20 10 40))
+                            (translate [-30 75 20] (cube 20 10 40))
+                            (translate [-30 20 20] (cube 20 10 40))
+                            (translate [-75 -35 20] (cube 10 20 40))
+                            (translate [75 -35 20] (cube 10 20 40))
+                            (translate [0 -35 20] (cube 130 20 40)))
+                     (cylinder 22 200)
+                     (translate [-25.4 50.8 0] (cylinder 16.5 200))
+                     (translate [38.1 25.4 0] (cylinder 16.5 200))
+                     (translate [80 80 0] (cylinder 20 200))
+                     (translate [80 -80 0] (cylinder 20 200))
+                     (translate [-80 80 0] (cylinder 20 200))
+                     (translate [-80 -80 0] (cylinder 20 200)))))
+
+(spit "things/key-foot-plate.scad"
+      (write-scad
+       (apply union
+              (translate [50 50 0.1] (cube 120 120 0.2))
+              (for [i (range 6)
+                    j (range 6)]
+                (translate [(* 20 i) (* 20 j) 0] key-foot-plate)))))
