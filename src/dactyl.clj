@@ -11,7 +11,8 @@
                                     mirror rotate translate
                                     union difference cut
                                     extrude-linear project
-                                    color]]))
+                                    color]
+             :as model]))
 
 (def π Math/PI)
 
@@ -1445,102 +1446,6 @@
                                              (key-place lastcol (inc row) web-post-tr))))
             ))))
 
-(def case-roof-right (union
-                      key-holes
-                      key-holes-inner
-                      pinky-connectors
-                      extra-connectors
-                      connectors
-                      inner-connectors
-                      thumb-type
-                      thumb-connector-type))
-
-(def case-walls-right (difference (union case-walls
-                                         #_screw-insert-outers)
-                                  case-roof-right
-                                  usb-holder-space
-                                  #_trrs-notch
-                                  #_ousb-holder-notch
-                                  #_screw-insert-holes
-                                  (translate [0 0 -20] (cube 350 350 40))))
-
-(spit "things/case-roof-right.scad" (write-scad case-roof-right))
-
-(spit "things/case-walls-right.scad" (write-scad case-walls-right))
-
-(def model-right (union case-roof-right case-walls-right))
-
-(spit "things/right.scad" (write-scad model-right))
-
-(spit "things/left.scad" (write-scad (mirror [-1 0 0] model-right)))
-
-(spit "things/controller.scad"
-      (let [w 25.6, h 9.0, d 9.0 ; 14 pin connector size
-            b (+ 5 (/ w 2))
-            top (union
-                 ;; roof - led and button holes
-                 (difference
-                  (union (translate [45 18 34.5] (cube 90 36 3))
-                         (for [i (range 3)]
-                           (translate [(+ 40 (* i 20)) 18 31.5] (cylinder 5 9))))
-                  (for [i (range 3)]
-                    (translate [(+ 40 (* i 20)) 18 0] (cylinder 2.5 80)))
-                  (translate [15 18 0] (cylinder 6.5 80)))
-                 ;; button holder
-                 (translate [15 18 30]
-                            (difference (cube 12 16 12)
-                                        (translate [0 0 3] (cube 10 14 7))
-                                        (translate [0 0 -3.25] (cube 15 12 3.5))
-                                        (cube 15 10 20)))
-                 ;; back wall
-                 (translate [1.5 18 18] (cube 3 36 36))
-                 ;; front wall - micro usb port hole
-                 (difference (translate [88.5 18 18] (cube 3 36 36))
-                             (translate [90 18 0] (cube 10 12 24)))
-                 ;; side wall
-                 (difference
-                  (union
-                   (translate [45 1.5 18] (cube 90 3 36))
-                   (translate [45 34.5 18] (cube 90 3 36))
-                   ;; spacers for 14 pin connectors
-                   (translate [b 4 18] (cube (- w 1) 8 36))
-                   (translate [b 32 18] (cube (- w 1) 8 36)))
-                  ;; side grills
-                  (for [i (range 10)]
-                    (translate [(+ 35 (* i 6)) 0 18] (cube 3 80 18)))
-                  ;; push fit notches for bottom plate
-                  #_(for [i (range 3)]
-                      (list
-                       (translate [(+ 40 (* i 20)) 3 1.5] (sphere 1))
-                       (translate [(+ 40 (* i 20)) 33 1.5] (sphere 1))))
-                  (translate [60 3 1.5] (rotate (/ π 2) [0 1 0] (cylinder 1 40)))
-                  (translate [60 33 1.5] (rotate (/ π 2) [0 1 0] (cylinder 1 40)))
-                  ;; cutout for bottom plate
-                  (translate [b 0 0] (cube (+ 2 w) 80 6))
-                  (translate [b 0 (+ 2 (/ h 2))] (cube (- w 1) 80 (- h 1)))
-                  (translate [b 18 (+ 2 (/ h 2))] (cube w 34 h))))
-            bot (difference
-                 (translate [45 18 1.5] (cube 90 36 3))
-                 ;; connector placer
-                 (translate [b (+ 1 (/ d 2)) 3] (cube w d 2))
-                 (translate [b (- 35 (/ d 2)) 3] (cube w d 2))
-                 ;; connector middle key cut
-                 (translate [b 0 3] (cube 5 3 2))
-                 (translate [b 36 3] (cube 5 3 2))
-                 ;; hole for opening convinence
-                 (for [i (range 2)]
-                   (list
-                    (translate [(+ 50 (* i 20)) 0 0] (cube 5 10 10))
-                    (translate [(+ 50 (* i 20)) 36 0] (cube 5 10 10))))
-                 top)]
-        (write-scad
-         (union
-          (->> top
-               (mirror [0 0 1])
-               (translate [0 0 36]))
-          (->> bot
-               (translate [0 -40 0]))))))
-
 ;;; WRIST PAD
 
 (let [ps1 [[0 85]
@@ -1597,35 +1502,220 @@
   (spit "things/wrist-pad-right.scad" (write-scad right))
   (spit "things/wrist-pad-left.scad" (write-scad left)))
 
-;;; Satelite board test
+;;; Case roof (just key holes)
+
+(def case-roof-right (union
+                      key-holes
+                      key-holes-inner
+                      pinky-connectors
+                      extra-connectors
+                      connectors
+                      inner-connectors
+                      thumb-type
+                      thumb-connector-type))
+
+(spit "things/case-roof-right.scad" (write-scad case-roof-right))
+
+;;; Case sockets section
+(def case-socket-walls
+  (let [x1 -80 x2 10 x3 -72 x4 -78 x5 -45
+        y1 80 y2 10 y3 38 y4 75 y5 65 y6 23
+        z1 0 z2 100 z3 60 z4 90 z5 100
+        p1 (translate [x1 y2 z1] (sphere 2))
+        p2 (translate [x1 y2 z2] (sphere 2))
+        p3 (translate [x2 y1 z1] (sphere 2))
+        p4 (translate [x2 y1 z3] (sphere 2))
+        p5 (translate [x3 y1 z1] (sphere 2))
+        p6 (translate [x3 y1 z2] (sphere 2))
+        p7 (translate [x3 y3 z1] (sphere 2))
+        p8 (translate [x3 y3 z2] (sphere 2))
+        p9 (translate [x2 y4 z1] (sphere 2))
+        p10 (translate [x2 y4 z3] (sphere 2))
+        p11 (translate [x4 y2 z1] (sphere 2))
+        p12 (translate [x4 y2 z2] (sphere 2))
+        p13 (translate [x1 y6 z1] (sphere 2))
+        p14 (translate [x1 y6 z2] (sphere 2))
+        p30 (translate [x5 y5 z5] (sphere 2))]
+    (union (hull p3 p4 p5 p6)
+           (hull p5 p6 p7 p8)
+           (hull p7 p8 p13 p14)
+           (hull p13 p14 p1 p2)
+           (hull p1 p2 p11 p12)
+           (hull p3 p4 p9 p10)
+           (hull p4 p10 p30)
+           (hull p4 p6 p30)
+           (hull p8 p6 p30)
+           (hull p8 p14 p30)
+           (hull p2 p14 p30)
+           (hull p2 p12 p30))))
+
+(def case-socket-holes-common
+  (union (->> (scale [0.1 0.1 1] (cylinder 65 20))
+              (rotate (/ π 2) [0 1 0])
+              (translate [-80 33 50]))
+         (->> (scale [0.1 0.1 1] (cylinder 27 20))
+              (rotate (/ π 2) [0 1 0])
+              (translate [-80 48.5 50]))
+         (translate [-80 17 50] (cube 15 4 20))))
+
+(def case-socket-holes-right
+  (union (translate [-44 80 21] (cube 18 20 14))
+         (translate [-21 80 18] (cube 12 20 8))))
+
+(def case-socket-common (difference case-socket-walls
+                                    case-socket-holes-common
+                                    (translate [0 0 -20] (cube 350 350 40))))
+
+(def case-socket-right (difference case-socket-common
+                                   case-socket-holes-right))
+
+(spit "things/case-socket-right.scad" (write-scad case-socket-right))
+
+(def case-socket-holes-left
+  (union (translate [17 80 21] (cube 18 20 14))
+         (translate [40 80 18] (cube 12 20 8))))
+
+(def case-socket-left (difference (mirror [1 0 0] case-socket-common)
+                                  case-socket-holes-left))
+
+(spit "things/case-socket-left.scad" (write-scad case-socket-left))
+
+;;; aux
+
+(def screw-hole-3mm (scale [0.1 0.1 0.1]
+                           (union (cylinder 15 300)
+                                  (cylinder 30 100))))
+
+(def screw-hole-3mm-base (scale [0.1 0.1 0.1]
+                                (union (cylinder 10 200)
+                                       (difference (cylinder 50 160)
+                                                   (translate [0 0 -60] (cube 200 200 160))))))
+
+;;; case panel section
+
+(def case-panel
+  (let [h 30
+        full? true]
+    (union
+     (translate [-95 -37 (+ 50 h)]
+                (rotate [(* π 0.2) 0 (* π -0.14)] nil
+                        (difference
+                         (hull (translate [-23 -28 0] (sphere 2))
+                               (translate [23 -28 0] (sphere 2))
+                               (translate [-23 28 0] (sphere 2))
+                               (translate [23 28 0] (sphere 2)))
+                         (cube 36 36 10))))
+     (let [x1 -106.1 x2 -64.4 x3 -80 x4 -125.7 x5 -83.6
+           y1 -6.4 y2 -26.1 y3 5 y4 -47.9 y5 -67.5
+           z1 (+ h 66.54) z2 100 z3 (+ h 33) z4 (if full? -10 h)
+           p1 (translate [x1 y1 z1] (sphere 2))
+           p2 (translate [x2 y2 z1] (sphere 2))
+           p3 (translate [x3 y3 z2] (sphere 2))
+           p4 (translate [x1 y3 z1] (sphere 2))
+           p5 (translate [x4 y4 z3] (sphere 2))
+           p6 (translate [x5 y5 z3] (sphere 2))
+           p01 (translate [x1 y1 z4] (sphere 2))
+           p02 (translate [x2 y2 z4] (sphere 2))
+           p03 (translate [x3 y3 z4] (sphere 2))
+           p04 (translate [x1 y3 z4] (sphere 2))
+           p05 (translate [x4 y4 z4] (sphere 2))
+           p06 (translate [x5 y5 z4] (sphere 2))]
+       (union (hull p1 p2 p3)
+              (hull p1 p3 p4)
+              (hull p4 p3 p04 p03)
+              (hull p1 p4 p5)
+              (hull p4 p5 p04 p05)
+              (hull p5 p6 p05 p06)
+              (hull p6 p2 p06 p02)
+              (hull p01 p02 p03 p04 p05 p06))))))
+
+;;; case walls
+
+(def case-walls-right
+  (let [place #(translate [-59.8 60 107] (rotate [(/ π 2) 0 (* π 0.26)] nil %))]
+    (difference (union (difference case-walls
+                                   (hull case-panel))
+                       case-panel
+                       (place screw-hole-3mm-base))
+                case-roof-right
+                (hull case-socket-right)
+                (place screw-hole-3mm)
+                (translate [0 0 -20] (cube 350 350 40)))))
+
+(spit "things/case-walls-right.scad" (write-scad case-walls-right))
+
+;; base plate
+
+(def plate-right
+  (->> (union case-walls
+              case-socket-right
+              (map hull (rest key-holes))
+              (map hull (rest key-holes-inner))
+              pinky-connectors
+              extra-connectors
+              connectors
+              inner-connectors
+              (map hull (rest thumb-type))
+              thumb-connector-type
+              (hull case-panel))
+       (translate [0 0 -0.1])
+       (model/project)
+       (model/extrude-linear {:height 3})))
+
+(def screw-hole-3mm-2 (scale [0.1 0.1 0.1]
+                             (union (cylinder 15 300)
+                                    (cylinder 30 60)
+                                    (translate [0 0 30] (sphere 30)))))
+
+(spit "things/plate-right.scad"
+      (letfn [(cut-hole [[x y] m]
+                (difference
+                 (union m
+                        (translate [x y -3.5] screw-hole-3mm-base))
+                 (translate [x y -3.5] screw-hole-3mm-2)))]
+        (->> (union plate-right
+                    #_(let [x -43 y -96]
+                        (difference (translate [x y 0] (cylinder 10.5 30))
+                                    (translate [x y 0] (cylinder 6 60)))))
+             (cut-hole [42 -42])
+             (cut-hole [21.8 70.3])
+             (cut-hole [-63.5 71.9])
+             (cut-hole [-87 -3])
+             (cut-hole [-110 -45.6])
+             (cut-hole [-43 -96])
+             write-scad)))
+
+
+;;; Boards test
 
 (def satelite-board
   (union (translate [1 40 10] (cube 2 80 20))
          (translate [21 63 -5] (cube 38 22 10))
-         (translate [-10 22 10] (cube 20 4 20))
-         (->> (cylinder 6.5 15)
+         (translate [-11 22 10] (cube 22 3 18))
+         (->> (cylinder 5.5 15)
               (rotate (/ π 2) [0 1 0])
               (translate [-7.5 37 10]))
-         (->> (cylinder 3 15)
+         (->> (cylinder 2.5 15)
               (rotate (/ π 2) [0 1 0])
-              (translate [-7.5 55 10]))))
+              (translate [-7.5 52.5 10]))))
 
 (spit "things/satelite-board.scad" (write-scad satelite-board))
 
 (def primary-board
   (union (translate [25 37.5 1] (cube 50 75 2))
          (translate [16 73 9] (cube 16 10 14))
-         (translate [38 70 5] (cube 8 10 6))))
+         (translate [39 70 5] (cube 8 10 6))))
 
 (spit "things/primary-board.scad" (write-scad primary-board))
 
 (spit "things/test-board-in-case.scad"
       (write-scad
        (union case-walls-right
-              (translate [-60 4 10]
+              (translate [-60 0 10]
                          (union
                           primary-board
-                          (translate [0 -5 30] satelite-board))))))
+                          (translate [0 -5 30] satelite-board)))
+              case-socket-right)))
 
 ;;; key foot plate
 
@@ -1654,3 +1744,246 @@
               (for [i (range 6)
                     j (range 6)]
                 (translate [(* 20 i) (* 20 j) 0] key-foot-plate)))))
+
+;;; ball socket
+
+(def ball-socket
+  (let [s 10 S (/ 1 s)
+        w 42.0 H 24.0
+        d0 34.0
+        d1 6.0 l1 2.5
+        d2 3.0 l2 6.0
+        w1 23.0 h1 29.0 h1i 26.0
+        theta (* 20 (/ π 180))
+        L (/ (+ d0 d1) 2)
+        r (* L (Math/cos theta))
+        h (- (/ d0 2) (* L (Math/sin theta)))
+        ri (- r 6)
+        ro (/ w 2)]
+    (println {:L L :r r :h h :ri ri :ro ro})
+    (scale [S S S]
+           (let [rod (rotate (/ π 2) [1 0 0] (cylinder (* s (/ (+ 0.5 d2) 2)) (* s l2)))
+                 cut1 (union (cube (* s (+ w 1)) (* s (+ l1 0.5)) (* s (+ d1 1)))
+                             (translate [(* s r) 0 0] rod)
+                             (translate [(* s r -1) 0 0] rod))
+                 cut2 (rotate (/ π 3) [0 0 1] cut1)
+                 cut3 (rotate (/ π 3) [0 0 1] cut2)
+                 cut4 (translate [0 0 (* s (- 0 h (/ H 2)))]
+                                 (cube (* s w1) (* s h1) (* s H)))
+                 cut5 (union (translate [0 (* s (+ 0 (/ h1 2) -2)) (* s (- 1 h (/ H 2)))]
+                                        (cylinder (* s 4) (* s H)))
+                             (translate [0 (* s (- 0 (/ h1 2) -2)) (* s (- 1 h (/ H 2)))]
+                                        (cylinder (* s 4) (* s H))))
+                 cut6 (let [z (- 0 h 5 (/ H 2))]
+                        (println "cut6" {:z z})
+                        (translate [0 0 (* s z)]
+                                   (cube (* s (+ w 1)) (* s h1i) (* s H))))]
+             (difference
+              (union
+               #_(translate [0 0 (* s L (Math/sin theta))] (sphere (* s (/ d0 2))))
+               #_(translate [(* s r) 0 0]
+                            (rotate (/ π 2) [1 0 0] (cylinder (* s (/ d1 2)) (* s l1))))
+               (difference
+                (union
+                 (let [z (- (+ 1 (/ d2 2)) (/ H 2))]
+                   (println "cyl1" {:z z})
+                   (difference
+                    (translate [0 0 (* s z)]
+                               (difference (cylinder (* s ro) (* s H))
+                                           (cylinder (* s ri) (* s (* 2 H)))))
+                    (translate [0 0 (* s L (Math/sin theta))] (sphere (* s (+ 2.5 (/ d0 2))))))))
+                cut1 cut2 cut3
+                cut4 cut5 cut6))
+              #_(translate [0 -500 0] (cube 1000 1000 1000)))))))
+
+(spit "things/ball-socket.scad" (write-scad ball-socket))
+
+;;; 8pin female connector cover
+
+(def conn-cover
+  (let [p 2.54 t 2 H 12 gt 2 gb 1 tol 0.3]
+    (letfn [(cf [x y]
+              (let [li (+ (* 8 p) tol)
+                    wi (+ p tol)
+                    l (+ t (- li tol) t)
+                    w (+ t (- wi tol) t y t)
+                    h (+ H gt gb x)
+                    t (- t (/ tol 2))]
+                (translate [(/ l 2) 0 0]
+                           (union
+                            (difference (cube l w h)
+                                        (translate [0 (- (/ w 2) (/ wi 2) t)] (cube li wi (* 2 h)))
+                                        (translate [0 t (- h x)] (cube (* 2 l) w h)))
+                            (translate [0 0 (- (/ h 2) x (/ gb 2))]
+                                       (difference (cube l w gb)
+                                                   (translate [0 (- (/ w 2) (/ wi 2) t) 0] (cube l 1 (* 2 gb)))))))))
+            (cf2 []
+              (let [li (+ (* 6 p) tol)
+                    wi (+ (* 1 p) tol)
+                    li2 (+ (* 2 p) tol)
+                    wi2 (+ (* 2 p) tol)
+                    l (+ t (- li tol) t)
+                    w (+ t (- wi2 tol) t)
+                    h (+ H gt gb)
+                    t (- t (/ tol 2))]
+                (translate [(/ l 2) 0 0]
+                           (difference (cube l w h)
+                                       (translate [0 (- (/ w 2) (/ wi 2) t) (- gb)] (cube li wi h))
+                                       (translate [(- (/ l 2) (/ li2 2) t) 0 (- gb)] (cube li2 wi2 h))
+                                       (translate [0 (- (/ w 2) (/ wi 2) t) 0] (cube li 1 (* 2 h)))
+                                       (translate [(- (/ l 2) (/ li2 2) t) (- (- (/ w 2) (/ wi 2) t)) 0]
+                                                  (cube li2 1 (* 2 h)))))))]
+      (union (translate [0 0 0] (cf 5 0))
+             (translate [0 20 0] (cf 5 -2))
+             (translate [0 40 0] (cf2))
+             (translate [0 60 0] (cf2))))))
+
+(spit "things/conn-cover.scad" (write-scad conn-cover))
+
+;;; screw-3mm-nuts
+
+(def screw-3mm-nuts
+  (scale [0.1 0.1 0.1]
+         (let [a (difference (cylinder 50 50) (cylinder 20 60))
+               b (difference (cylinder 50 50) (cylinder 25 60))
+               c (difference (cylinder 22 50) (cylinder 15 60))]
+           (union (for [i (range 5) j (range 3)]
+                    (translate [(* i 120) (* j 120) 0] a))
+                  (for [i (range 5)]
+                    (translate [(* i 120) -120 0] b))
+                  (for [i (range 5)]
+                    (translate [(* i 120) -200 0] c))))))
+
+(spit "things/screw-3mm-nuts.scad"
+      (write-scad (union screw-3mm-nuts
+                         (translate [24 4 -2.4] (cube 70 60 0.2)))))
+
+;;; primary board mounts
+
+(def primary-board-mount-1
+  (difference (translate [0 12.5 2.5] (cube 58 25 5))
+              (translate [0 6 0] (cube 50 12.1 100))
+              (translate [0 18.5 0] (cube 54.2 9.2 100))))
+
+(def screw-2mm-nut-1 (translate [0 0 6.25]
+                                (scale [0.1 0.1 0.1]
+                                       (difference (cylinder 30 125) (cylinder 18 200)))))
+
+(def screw-2mm-nut-2 (translate [0 0 2]
+                                (scale [0.1 0.1 0.1]
+                                       (difference (cylinder 30 40) (cylinder 18 200)))))
+
+(spit "things/primary-board-mounts.scad"
+      (write-scad
+       (union primary-board-mount-1
+              (translate [5 0 0] screw-2mm-nut-1)
+              (translate [15 0 0] screw-2mm-nut-2)
+              (translate [-5 0 0] screw-2mm-nut-1)
+              (translate [-15 0 0] screw-2mm-nut-2))))
+
+;;; LCD & ball mount
+
+(def fit-block
+  (let [c (rotate (/ π 2) [1 0 0] (scale [0.2 0.2 1] (cylinder 5 8)))]
+    (hull
+     (cube 2 8 7)
+     (translate [1 0 0] c)
+     (translate [-1 0 0] c))))
+
+(def mount-lid
+  (let [s (translate [0 0 2] (difference (sphere 2.2) (translate [0 0 4] (cube 8 8 8))))]
+    (difference
+     (union (hull
+             (translate [21 23 0] s)
+             (translate [21 -23 0] s)
+             (translate [-21 -23 0] s)
+             (translate [-21 23 0] s))
+            (translate [0 0 4] (cube 36 36 8)))
+     (translate [-17 14.1 5.5] fit-block)
+     (translate [-17 -14.1 5.5] fit-block)
+     (translate [17 -14.1 5.5] fit-block)
+     (translate [17 14.1 5.5] fit-block))))
+
+(def mount-hook
+  (translate [0 0 1]
+             (rotate (/ π 2) [1 0 0]
+                     (difference
+                      (union (translate [-0.1 0 3.5] fit-block)
+                             (translate [-1 0 6] (cube 4 8 2))
+                             (translate [-1 0 10] (cube 4 8 2))
+                             (translate [-2 0 8] (cube 2 8 6)))
+                      (translate [-2 0 2.5] (cube 2 10 5))
+                      (translate [0 -4 0] (cube 100 6 100))))))
+
+(def mount-lid-lcd
+  (difference  mount-lid
+               (translate [0 0 0] (cube 28 28 20))
+               (translate [0 0 8] (cube 32 50 2))))
+
+(spit "things/lcd-mounts.scad"
+      (write-scad (difference (union mount-lid-lcd
+                                     (translate [4 12 0] mount-hook)
+                                     (translate [4 -1 0] mount-hook)
+                                     (translate [-4 -1 0] mount-hook)
+                                     (translate [-4 12 0] mount-hook))
+                              (translate [0 0 -5] (cube 50 50 10)))))
+
+(def mount-hook-plate
+  (->>
+   (union
+    (difference (cube 42 42 4)
+                (cube 25 50 5)
+                (translate [-18 15.5 2] (cube 4 5 4))
+                (translate [18 15.5 2] (cube 4 5 4))
+                (translate [18 -15.5 2] (cube 4 5 4))
+                (translate [-18 -15.5 2] (cube 4 5 4)))
+    (cube 29 10 4)
+    (translate [-13.5 0 3] (cube 2 22 2))
+    (translate [13.5 0 3] (cube 2 22 2)))
+   (translate [0 0 2])))
+
+(def mount-hook-rod
+  (->>
+   (difference
+    (union fit-block
+           (translate [-1 0 13] (cube 4 8 33)))
+    (translate [-3 0 0] (cube 4 16 16))
+    (translate [0 -4 0] (cube 100 6 100)))
+   (rotate (/ π 2) [1 0 0])
+   (translate [0 0 1])))
+
+(def mount-lid-ball
+  (let [theta (* 20 (/ π 180))
+        z (- 11.5 (* 20 (Math/sin theta)))
+        c1 (translate [0 0 11.5] (cube 3 43 7))
+        c2 (rotate (/ π 3) [0 0 1] c1)
+        c3 (rotate (/ π 3) [0 0 1] c2)
+        c4 (translate [12 0 6] (cube 2 50 8))
+        c5 (translate [-24 0 0] c4)
+        c6 (translate [0 0 (+ 5 z)] (scale [0.1 0.1 1] (cylinder 170 10)))
+        c7 (translate [18 0 9] (cube 4.5 50 2.01))
+        c8 (translate [-36 0 0] c7)]
+    (difference (union mount-lid
+                       (translate [0 0 8.5] (cube 36 36 1)))
+                (translate [0 0 z] (scale [0.1 0.1 0.1] (sphere 180)))
+                c1 c2 c3 c4 c5 c6 c7 c8)))
+
+(spit "things/ball-mounts.scad"
+      (write-scad (union mount-hook-plate
+                         (translate [-30 40 0] mount-hook-rod)
+                         (translate [-40 40 0] mount-hook-rod)
+                         (translate [40 40 0] mount-hook-rod)
+                         (translate [30 40 0] mount-hook-rod)
+                         (translate [0 50 0] mount-lid-ball))))
+
+(spit "things/test-ball-mount-plate.scad"
+      (let [theta (* 20 (/ π 180))]
+        (write-scad
+         (difference
+          (union ball-socket
+                 (translate [0 0 11.5] (rotate [π 0 (/ π 2)] nil mount-lid-ball))
+                 (translate [0 0 (* 20 (Math/sin theta))]
+                            (scale [0.1 0.1 0.1] (sphere 170)))
+                 (translate [(* 20 (Math/cos theta)) 0 0]
+                            (rotate (/ π 2) [1 0 0] (scale [0.1 0.1 1] (cylinder 30 2.5)))))
+          (translate [0 -50 0] (cube 100 100 100))))))
